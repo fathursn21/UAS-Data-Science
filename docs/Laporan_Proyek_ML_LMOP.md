@@ -179,8 +179,8 @@ Berdasarkan hasil eksekusi `integrasi_data.py` dan pemeriksaan fitur pada `karhu
 | `rainfall_30d_mm` | `float64` | `0.40%` | Akumulasi curah hujan 30 hari saat bulan kebakaran (mm) | `58.4 ± 46.2 mm` (Median: `43.8 mm`) | `18.5`, `124.0` |
 | `temp_max_c` | `float64` | `3.20%` | Suhu udara maksimum rata-rata bulanan saat kebakaran ($^\circ\text{C}$) | `33.3 ± 1.18 °C` (Rentang: `28.4 – 37.8 °C`) | `33.6`, `35.1` |
 | `rh_avg_pct` | `float64` | `3.20%` | Kelembapan udara rata-rata bulanan saat kebakaran (%) | `74.4 ± 5.42 %` (Rentang: `51.2 – 96.0 %`) | `68.5`, `77.2` |
-| `pre_existing_palm_flag` | `int32` | `0.00%` | **Atribut Audit Leakage:** `1` jika lahan sudah sawit ($\text{YoP} \le \text{fire\_year}$) | `1`: ~`2.1% – 4.5%` (Wajib dieksklusi saat *Data Cleaning*) | `0`, `1` |
-| `is_converted_to_palm` | `int32` | `0.00%` | **Label Target ($Y$):** `1` jika berubah jadi sawit pada $t+1 \dots t+3$; `0` jika tidak | Kelas `1`: ~`18.5% – 21.0%`, Kelas `0`: ~`79.0% – 81.5%` | `0`, `1` |
+| `pre_existing_palm_flag` | `int32` | `0.00%` | **Atribut Audit Leakage:** `1` jika lahan sudah sawit (`YoP <= fire_year`), `0` jika belum | `1`: `~2.1% – 4.5%` (Wajib dieksklusi saat *Data Cleaning*) | `0`, `1` |
+| `is_converted_to_palm` | `int32` | `0.00%` | **Label Target ($Y$):** `1` jika berubah jadi sawit pada $t+1 \dots t+3$; `0` jika tidak | Kelas `1`: `~18.5% – 21.0%`, Kelas `0`: `~79.0% – 81.5%` | `0`, `1` |
 
 ### 4.3 Kondisi Data
 
