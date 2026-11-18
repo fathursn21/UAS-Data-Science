@@ -198,19 +198,19 @@ Berdasarkan hasil pengecekan terprogram melalui script `eda_dan_prep.py` pada fi
 ### 4.4 Exploratory Data Analysis (EDA) - (**OPSIONAL**)
 
 #### Visualisasi 1: Distribusi Jarak ke Kebun Sawit Eksisting Berdasarkan Status Konversi Lahan (*Boxplot & KDE Plot*)
-![Boxplot dan KDE Jarak Kebun Sawit](docs/reports/figures/eda_01_dist_palm_boxplot_kde.png)
+![Boxplot dan KDE Jarak Kebun Sawit](reports/figures/eda_01_dist_palm_boxplot_kde.png)
 
 **Insight:**  
 Visualisasi *Boxplot* dan *Kernel Density Estimation* (KDE) pada skala $\log(1+x)$ memperlihatkan perbedaan distribusi yang sangat kontras antara lahan yang terkonversi ($Y=1$) dan yang tidak terkonversi ($Y=0$). Lahan bekas karhutla yang beralih fungsi menjadi kebun sawit dalam 1–3 tahun pasca-kebakaran memiliki median jarak ke kebun sawit eksisting yang jauh lebih dekat (`< 1.5 km`), membuktikan bahwa ekspansi sawit pasca-karhutla sangat dipengaruhi oleh kedekatan spasial (*spatial proximity*) terhadap perkebunan yang sudah beroperasi sebelumnya.
 
 #### Visualisasi 2: Proporsi Alih Fungsi Lahan Pasca-Karhutla per Provinsi & Tahun Kebakaran (*Stacked Bar Plot*)
-![Proporsi Konversi per Provinsi dan Tahun](docs/reports/figures/eda_02_province_year_stacked_bar.png)
+![Proporsi Konversi per Provinsi dan Tahun](reports/figures/eda_02_province_year_stacked_bar.png)
 
 **Insight:**  
 Keempat provinsi prioritas (**Kalimantan Tengah, Riau, Sumatera Selatan, dan Kalimantan Barat**) menunjukkan proporsi risiko konversi pasca-karhutla ke kelapa sawit yang signifikan di kisaran `17% – 22%`. Ditinjau berdasarkan tahun kebakaran (`fire_year`), kejadian kebakaran besar pada tahun El Niño **2015** dan **2018** menyumbang volume pembukaan lahan kelapa sawit baru yang paling masif pada periode 1–3 tahun setelahnya.
 
 #### Visualisasi 3: Matriks Korelasi Fitur Numerik (*Spearman Correlation Heatmap*)
-![Correlation Heatmap Spearman](docs/reports/figures/eda_03_correlation_heatmap.png)
+![Correlation Heatmap Spearman](reports/figures/eda_03_correlation_heatmap.png)
 
 **Insight:**  
 Berdasarkan matriks korelasi Spearman, variabel target `is_converted_to_palm` memiliki korelasi negatif terkuat dengan `dist_to_existing_palm_km` dan `dist_to_road_km` (semakin dekat ke kebun sawit eksisting dan akses jalan, semakin tinggi peluang alih fungsi lahan), serta berkorelasi positif dengan keberadaan titik di dalam konsesi/area industri (`in_palm_concession`), frekuensi kebakaran berulang (`fire_freq_3yr`), dan intensitas radiasi api (`frp`).
