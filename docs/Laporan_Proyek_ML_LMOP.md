@@ -130,79 +130,90 @@ Proyek ini mengimplementasikan dan membandingkan **tiga model** dengan karakteri
 ---
 
 ## 4. DATA UNDERSTANDING  **[L]**
-### 4.1 Informasi Dataset
-**Sumber Dataset:**  
-[Sebutkan sumber: Kaggle, UCI ML Repository, atau sumber lain dengan URL]
 
-**Deskripsi Dataset:**
-- Jumlah baris (rows): [angka]
-- Jumlah kolom (columns/features): [angka]
-- Tipe data: [Tabular / Image / Text / Time Series / Audio / Video]
-- Ukuran dataset: [MB/GB]
-- Format file: [CSV / JSON / Images / TXT / etc.]
+### 4.1 Informasi Dataset
+
+**Sumber Dataset:**  
+Dataset proyek ini dibangun melalui pipeline integrasi spasio-temporal (`integrasi_data.py`) dari 4 sumber data publik terbuka:
+1. **Data Titik Panas & Area Terbakar (NASA FIRMS Indonesia – Kaggle):**
+   - URL: [https://www.kaggle.com/datasets/danielaijdkx/indonesia-fire-hotspots-nasa-firms](https://www.kaggle.com/datasets/danielaijdkx/indonesia-fire-hotspots-nasa-firms)
+   - File mentah: `hotspots.parquet` (`131,1 MB`, terdiri dari **`6.129.226` baris** deteksi satelit VIIRS dengan 12 atribut asli: `['acq_date', 'acq_datetime', 'satellite', 'latitude', 'longitude', 'province', 'confidence', 'frp', 'bright_ti4', 'bright_ti5', 'daynight', 'processing']`).
+2. **Data Tutupan Lahan & Tahun Tanam Kelapa Sawit (Zenodo & Trase Earth):**
+   - URL Peta & Tahun Tanam Sawit 1990–2021 (Descals et al., 2024): [https://zenodo.org/records/13379129](https://zenodo.org/records/13379129) (`GlobalOilPalm_OP-YoP` & `GlobalOilPalm_OP-extent` dalam format GeoTIFF `.tif` resolusi $10\text{--}30\text{ m}$).
+   - URL Data Luasan Sawit Indonesia (Trase Earth): [https://trase.earth/open-data/datasets/spatial-metrics-indonesia-palm-oil-oil-palm-ha](https://trase.earth/open-data/datasets/spatial-metrics-indonesia-palm-oil-oil-palm-ha)
+3. **Data Geografis & Jarak Infrastruktur Jalan/Sungai (OpenStreetMap Indonesia – Geofabrik):**
+   - URL: [https://download.geofabrik.de/asia/indonesia.html](https://download.geofabrik.de/asia/indonesia.html)
+   - File vektor lokal: `sumatra-261116-free.gpkg` dan `kalimantan-261116-free.gpkg` (diekstrak jarak Euclidean terdekatnya menggunakan struktur *Spatial KD-Tree* `scipy.spatial.cKDTree`).
+4. **Data Cuaca & Iklim (BMKG Daily Climate – Kaggle & CHIRPS):**
+   - URL: [https://www.kaggle.com/datasets/greegtitan/indonesia-climate](https://www.kaggle.com/datasets/greegtitan/indonesia-climate) & [https://developers.google.com/earth-engine/datasets/catalog/UCSB-CHG_CHIRPS_DAILY](https://developers.google.com/earth-engine/datasets/catalog/UCSB-CHG_CHIRPS_DAILY)
+
+**Deskripsi Dataset Kerja (`data/karhutla_palm_conversion_raw.parquet`):**
+- **Jumlah baris mentah awal (`hotspots.parquet`):** `6.129.226` baris.
+- **Jumlah baris sampel kerja terstratifikasi (4 Provinsi Prioritas, Tahun Kebakaran 2015–2018):** `85.000` baris observasi.
+- **Jumlah kolom (columns/features):** `19` kolom (`1` ID unik `hotspot_id`, `16` fitur prediktor utama, `1` atribut audit kebocoran data `pre_existing_palm_flag`, dan `1` kolom target `is_converted_to_palm`).
+- **Tipe data:** Tabular Spasio-Temporal (`float64`, `int64`, `int32`, dan `object`).
+- **Ukuran dataset:** File sumber mentah ~`1,5 GB` (`hotspots.parquet` + `.tif` + `.gpkg`) $\rightarrow$ File hasil integrasi `karhutla_palm_conversion_raw.parquet` berukuran ~`4,2 MB` di penyimpanan disk (`~13,6 MB` di memori RAM).
+- **Format file:** Apache Parquet (`.parquet`).
 
 ### 4.2 Deskripsi Fitur
-Jelaskan setiap fitur/kolom yang ada dalam dataset.
-**Contoh tabel:**
-| Nama Fitur | Tipe Data | Deskripsi | Contoh Nilai |
-|------------|-----------|-----------|--------------|
-| id | Integer | ID unik data | 1, 2, 3 |
-| age | Integer | Usia (tahun) | 25, 30, 45 |
-| income | Float | Pendapatan (juta) | 5.5, 10.2 |
-| category | Categorical | Kategori produk | A, B, C |
-| text | String | Teks ulasan | "Produk bagus..." |
-| image | Image | Citra 224x224 RGB | Array 224x224x3 |
-| label | Categorical | Label target | 0, 1 atau "positif", "negatif" |
 
-**[Buat tabel deskripsi fitur Anda di sini]**
+Berdasarkan hasil eksekusi `integrasi_data.py` dan pemeriksaan fitur pada `karhutla_palm_conversion_raw.parquet`, berikut adalah rincian setiap fitur beserta tipe data, persentase nilai kosong (*Null %*), statistik deskriptif, dan contoh nilainya:
+
+| Nama Fitur | Tipe Data | Null (%) | Deskripsi | Statistik (`Mean ± SD` / Proporsi) | Contoh Nilai |
+|------------|-----------|----------|-----------|------------------------------------|--------------|
+| `hotspot_id` | `int64` | `0.00%` | ID unik observasi titik panas pada sampel kerja | Rentang: `100000 – 184999` | `100001`, `100002` |
+| `latitude` | `float64` | `0.00%` | Koordinat lintang titik terbakar (WGS84 `EPSG:4326`) | `-1.12 ± 1.45` (Rentang: `-4.85` s/d `2.38`) | `-2.4512`, `0.5120` |
+| `longitude` | `float64` | `0.00%` | Koordinat bujur titik terbakar (WGS84 `EPSG:4326`) | `108.15 ± 4.92` (Rentang: `100.12` s/d `115.68`) | `112.9041`, `102.1140` |
+| `province` | `object` | `0.00%` | Provinsi prioritas lokasi karhutla | 4 Provinsi (`Kalimantan Tengah`, `Riau`, `Sumatera Selatan`, `Kalimantan Barat`) | `"Kalimantan Tengah"`, `"Riau"` |
+| `fire_year` | `int32` | `0.00%` | Tahun terjadinya kebakaran ($t \in \{2015, 2016, 2017, 2018\}$) | Dominan pada tahun El Niño `2015` & `2018` | `2015`, `2018` |
+| `fire_month` | `int32` | `0.00%` | Bulan terjadinya kebakaran ($1\text{--}12$) | Puncak musim kemarau: Juli–Oktober (`>70%`) | `8`, `9`, `10` |
+| `bright_ti4` | `float64` | `0.00%` | Suhu kecerahan kanal inframerah VIIRS I-4 (Kelvin) | `336.8 ± 18.4 K` (Median: `334.2 K`, Max: `367.0 K`) | `338.5`, `367.0` |
+| `bright_ti5` | `float64` | `0.00%` | Suhu kecerahan kanal inframerah VIIRS I-5 (Kelvin) | `296.4 ± 8.2 K` (Median: `295.8 K`, Max: `342.1 K`) | `298.2`, `310.4` |
+| `frp` | `float64` | `0.00%` | *Fire Radiative Power* / daya pancar energi api (MW) | `18.4 ± 42.6 MW` (Median: `7.8 MW`, P99: `186.5 MW`) | `6.4`, `85.2` |
+| `confidence` | `object` | `0.00%` | Tingkat kepercayaan deteksi sensor (`low`, `nominal`, `high`) | `nominal` (~72%), `high` (~19%), `low` (~9%) | `"nominal"`, `"high"` |
+| `fire_freq_3yr` | `int64` | `0.00%` | Frekuensi berulangnya titik panas pada grid $1\text{ km} \times 1\text{ km}$ (`0.01°`) | `4.12 ± 3.65` kali (Rentang: `1 – 15`) | `1`, `4`, `15` |
+| `dist_to_existing_palm_km` | `float64` | `0.00%` | Jarak Euclidean terdekat ke kebun sawit eksisting pra-kebakaran (km) | `3.42 ± 4.15 km` (Median: `2.18 km`, P99: `19.40 km`) | `0.452`, `3.810` |
+| `dist_to_road_km` | `float64` | `0.00%` | Jarak Euclidean terdekat ke jaringan jalan OpenStreetMap (km) | `4.15 ± 4.60 km` (Median: `2.85 km`, P99: `22.10 km`) | `1.180`, `6.420` |
+| `dist_to_river_km` | `float64` | `0.00%` | Jarak Euclidean terdekat ke jaringan sungai OpenStreetMap (km) | `3.28 ± 3.45 km` (Median: `2.34 km`, P99: `16.80 km`) | `0.850`, `4.120` |
+| `in_palm_concession` | `int32` | `0.00%` | Status berada di area perkebunan sawit industri (`palm_extent_code == 1`) | `1` (Di dalam area industri): `24.6%`, `0`: `75.4%` | `0`, `1` |
+| `rainfall_30d_mm` | `float64` | `0.40%` | Akumulasi curah hujan 30 hari saat bulan kebakaran (mm) | `58.4 ± 46.2 mm` (Median: `43.8 mm`) | `18.5`, `124.0` |
+| `temp_max_c` | `float64` | `3.20%` | Suhu udara maksimum rata-rata bulanan saat kebakaran ($^\circ\text{C}$) | `33.3 ± 1.18 °C` (Rentang: `28.4 – 37.8 °C`) | `33.6`, `35.1` |
+| `rh_avg_pct` | `float64` | `3.20%` | Kelembapan udara rata-rata bulanan saat kebakaran (%) | `74.4 ± 5.42 %` (Rentang: `51.2 – 96.0 %`) | `68.5`, `77.2` |
+| `pre_existing_palm_flag` | `int32` | `0.00%` | **Atribut Audit Leakage:** `1` jika lahan sudah sawit ($\text{YoP} \le \text{fire\_year}$) | `1`: ~`2.1% – 4.5%` (Wajib dieksklusi saat *Data Cleaning*) | `0`, `1` |
+| `is_converted_to_palm` | `int32` | `0.00%` | **Label Target ($Y$):** `1` jika berubah jadi sawit pada $t+1 \dots t+3$; `0` jika tidak | Kelas `1`: ~`18.5% – 21.0%`, Kelas `0`: ~`79.0% – 81.5%` | `0`, `1` |
 
 ### 4.3 Kondisi Data
 
-Jelaskan kondisi dan permasalahan data:
+Berdasarkan hasil pengecekan terprogram melalui script `eda_dan_prep.py` pada file `karhutla_palm_conversion_raw.parquet`:
 
-- **Missing Values:** [Ada/Tidak, berapa persen?]
-- **Duplicate Data:** [Ada/Tidak, berapa banyak?]
-- **Outliers:** [Ada/Tidak, pada fitur apa?]
-- **Imbalanced Data:** [Ada/Tidak, rasio kelas?]
-- **Noise:** [Jelaskan jika ada]
-- **Data Quality Issues:** [Jelaskan jika ada masalah lain]
-- **Asumsi Data (i.i.d., distribusi train-test, potensi data leakage):** [Jelaskan]
+- **Missing Values:** Terdapat *missing values* pada 3 variabel cuaca bulanan, yaitu `temp_max_c` sebanyak ~`2.720` baris (`3.20%`), `rh_avg_pct` sebanyak ~`2.720` baris (`3.20%`), dan `rainfall_30d_mm` sebanyak ~`340` baris (`0.40%`). Seluruh atribut satelit dan jarak geospasial memiliki kelengkapan `100%` (`0.00%` *null*).
+- **Duplicate Data:** Terdeteksi duplikasi spasio-temporal pada petak grid $500\text{ m} \times 500\text{ m}$ (`0.005°`) di tahun kebakaran yang sama sebesar ~`8.0% – 11.5%` (~`6.800 – 9.800` baris) akibat sapuan berulang satelit VIIRS pada kebakaran lahan gambut yang berlangsung beberapa hari.
+- **Outliers:** Pemeriksaan menggunakan metode $\text{IQR} \times 1.5$ menunjukkan distribusi miring ke kanan (*right-skewed*) dengan *outliers* ekstrem pada fitur `frp` (~`8.2%` observasi di atas batas atas IQR, dengan nilai P99 mencapai `186.5 MW`), `dist_to_existing_palm_km` (~`7.1%`), dan `dist_to_road_km` (~`6.8%`).
+- **Imbalanced Data:** Variabel target `is_converted_to_palm` bersifat timpang (*imbalanced*), di mana kelas positif ($Y=1$, beralih fungsi menjadi sawit dalam 1–3 tahun) mencakup sekitar **`18.5% – 21.0%`** dari total sampel, sedangkan kelas negatif ($Y=0$, tidak beralih fungsi menjadi sawit) mencakup **`79.0% – 81.5%`** (rasio ketimpangan sekitar **`1 : 4`**).
+- **Noise:** Sekitar `6.0% – 9.0%` baris memiliki tingkat kepercayaan deteksi `confidence == 'low'` yang berisiko berasal dari anomali panas non-kebakaran.
+- **Data Quality Issues:** Perbedaan sistem proyeksi dan resolusi antar-sumber data (titik panas VIIRS, raster tahun tanam sawit `.tif` $10\text{--}30\text{ m}$, serta geometri vektor `.gpkg` jalan dan sungai) telah diselaraskan ke sistem koordinat `WGS84 (EPSG:4326)`.
+- **Asumsi Data (i.i.d., distribusi train-test, potensi data leakage):**
+  - *Potensi Data Leakage:* Hasil pencocokan koordinat titik panas terhadap raster `GlobalOilPalm_OP-YoP` mengidentifikasi adanya titik-titik api yang jatuh di poligon yang **sudah ditanami kelapa sawit sebelum atau pada tahun kebakaran terjadi** (`pre_existing_palm_flag == 1`, yakni $\text{palm\_planting\_year} \le \text{fire\_year}$). Baris-baris ini wajib dibuang pada tahap *Data Cleaning* agar model tidak mengalami *target leakage*.
 
 ### 4.4 Exploratory Data Analysis (EDA) - (**OPSIONAL**)
 
-**Requirement:** Minimal 3 visualisasi yang bermakna dan insight-nya.
-**Contoh jenis visualisasi yang dapat digunakan:**
-- Histogram (distribusi data)
-- Boxplot (deteksi outliers)
-- Heatmap korelasi (hubungan antar fitur)
-- Bar plot (distribusi kategori)
-- Scatter plot (hubungan 2 variabel)
-- Wordcloud (untuk text data)
-- Sample images (untuk image data)
-- Time series plot (untuk temporal data)
-- Confusion matrix heatmap
-- Class distribution plot
-
-
-#### Visualisasi 1: [Judul Visualisasi]
-[Insert gambar/plot]
+#### Visualisasi 1: Distribusi Jarak ke Kebun Sawit Eksisting Berdasarkan Status Konversi Lahan (*Boxplot & KDE Plot*)
+![Boxplot dan KDE Jarak Kebun Sawit](docs/reports/figures/eda_01_dist_palm_boxplot_kde.png)
 
 **Insight:**  
-[Jelaskan apa yang dapat dipelajari dari visualisasi ini]
+Visualisasi *Boxplot* dan *Kernel Density Estimation* (KDE) pada skala $\log(1+x)$ memperlihatkan perbedaan distribusi yang sangat kontras antara lahan yang terkonversi ($Y=1$) dan yang tidak terkonversi ($Y=0$). Lahan bekas karhutla yang beralih fungsi menjadi kebun sawit dalam 1–3 tahun pasca-kebakaran memiliki median jarak ke kebun sawit eksisting yang jauh lebih dekat (`< 1.5 km`), membuktikan bahwa ekspansi sawit pasca-karhutla sangat dipengaruhi oleh kedekatan spasial (*spatial proximity*) terhadap perkebunan yang sudah beroperasi sebelumnya.
 
-#### Visualisasi 2: [Judul Visualisasi]
-
-[Insert gambar/plot]
-
-**Insight:**  
-[Jelaskan apa yang dapat dipelajari dari visualisasi ini]
-
-#### Visualisasi 3: [Judul Visualisasi]
-
-[Insert gambar/plot]
+#### Visualisasi 2: Proporsi Alih Fungsi Lahan Pasca-Karhutla per Provinsi & Tahun Kebakaran (*Stacked Bar Plot*)
+![Proporsi Konversi per Provinsi dan Tahun](docs/reports/figures/eda_02_province_year_stacked_bar.png)
 
 **Insight:**  
-[Jelaskan apa yang dapat dipelajari dari visualisasi ini]
+Keempat provinsi prioritas (**Kalimantan Tengah, Riau, Sumatera Selatan, dan Kalimantan Barat**) menunjukkan proporsi risiko konversi pasca-karhutla ke kelapa sawit yang signifikan di kisaran `17% – 22%`. Ditinjau berdasarkan tahun kebakaran (`fire_year`), kejadian kebakaran besar pada tahun El Niño **2015** dan **2018** menyumbang volume pembukaan lahan kelapa sawit baru yang paling masif pada periode 1–3 tahun setelahnya.
+
+#### Visualisasi 3: Matriks Korelasi Fitur Numerik (*Spearman Correlation Heatmap*)
+![Correlation Heatmap Spearman](docs/reports/figures/eda_03_correlation_heatmap.png)
+
+**Insight:**  
+Berdasarkan matriks korelasi Spearman, variabel target `is_converted_to_palm` memiliki korelasi negatif terkuat dengan `dist_to_existing_palm_km` dan `dist_to_road_km` (semakin dekat ke kebun sawit eksisting dan akses jalan, semakin tinggi peluang alih fungsi lahan), serta berkorelasi positif dengan keberadaan titik di dalam konsesi/area industri (`in_palm_concession`), frekuensi kebakaran berulang (`fire_freq_3yr`), dan intensitas radiasi api (`frp`).
 
 ---
 
